@@ -1,0 +1,7 @@
+/libMR/CMake/libMRLibraryDepends.cmake
+/libMR/CMake/libMRLibraryDepends-noconfig.cmake
+/usr/local/lib/libMR.so
+/usr/local/include/MetaRecognition.h
+/usr/local/include/config.h
+/usr/local/bin/mr-test
+/usr/local/bin/wbl-test
