@@ -5,10 +5,9 @@ from keras.models import Sequential,load_model,save_model,model_from_config,mode
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
-from keras.utils import plot_model
+from tensorflow.keras.utils import to_categorical
 
-
-from evt_fitting import weibull_tailfitting, query_weibull
+from evt_fitting import weibull_distribution_fitting, query_weibul_distribution
 from compute_openmax import computeOpenMaxProbability,recalibrate_scores
 from openmax_utils import compute_distance
 
@@ -25,11 +24,10 @@ import matplotlib.pyplot as plt
 
 import ssl
 import sys
-import cv2
+#import cv2
 import glob
 
 ssl._create_default_https_context = ssl._create_unverified_context
-#from nepali_characters import *
 
 #train_x,train_y,test_x,text_y,valid_x,valid_y = split(0.9,0.05,0.05)
 
@@ -129,8 +127,8 @@ x_test /= 255
 #print(x_valid.shape[0], 'valid samples')
 
 # convert class vectors to binary class matrices
-y_train = keras.utils.to_categorical(y_train, num_classes)
-y_test = keras.utils.to_categorical(y_test, num_classes)
+y_train = to_categorical(y_train, num_classes)
+y_test = to_categorical(y_test, num_classes)
 
 
 def get_activations(model, layer, X_batch):
@@ -166,13 +164,13 @@ def create_model(model):
     feature = {}
     feature["score"] = []
     feature["fc8"] = []
-    weibull_model = {}
+    weibullDistributionModel = {}
     feature_mean = []
     feature_distance = []
 
     for i in range(len(sep_y)):
         print (i, sep_x[i].shape)
-        weibull_model[label[i]] = {}
+        weibullDistributionModel[label[i]] = {}
         score,fc8 = compute_feature(sep_x[i], model)
         mean = compute_mean_vector(fc8)
         distance = compute_distances(mean, fc8, sep_y)
@@ -182,48 +180,32 @@ def create_model(model):
     np.save('distance',feature_distance)
 
 def build_weibull(mean,distance,tail):
-    weibull_model = {}    
+    weibullDistributionModel = {}    
     for i in range(len(mean)):
-        weibull_model[label[i]] = {}        
-        weibull = weibull_tailfitting(mean[i], distance[i], tailsize = tail)
-        weibull_model[label[i]] = weibull
-    return weibull_model
+        weibullDistributionModel[label[i]] = {}        
+        weibull = weibull_distribution_fitting(mean[i], distance[i], tailsize = tail)
+        weibullDistributionModel[label[i]] = weibull
+    return weibullDistributionModel
         
 def compute_openmax(model,imagearr):
     mean = np.load('mean.npy')
     distance = np.load('distance.npy')
-    #Use loop to find the good parameters
-    #alpharank_list = [1,2,3,4,5,5,6,7,8,9,10]
-    #tail_list = list(range(0,21))
+
 
     alpharank_list = [10]
     #tail_list = [4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
     tail_list = [5]    
     total = 0
     for alpha in alpharank_list:
-        weibull_model = {}
+        weibullDistributionModel = {}
         openmax = None
         softmax = None        
         for tail in tail_list:
             #print ('Alpha ',alpha,' Tail ',tail)
             #print ('++++++++++++++++++++++++++++')
-            weibull_model = build_weibull(mean, distance, tail) 
-            openmax , softmax = recalibrate_scores(weibull_model, label, imagearr, alpharank=alpha)
-    
-            #print ('Openmax: ',np.argmax(openmax))
-            #print ('Softmax: ',np.argmax(softmax))            
-            #print ('opemax lenght',openmax.shape)
-            #print ('openmax',np.argmax(openmax))
-            #print ('openmax',openmax)
-            #print ('softmax',softmax.shape)
-            #print ('softmax',np.argmax(softmax))
-            #if np.argmax(openmax) == np.argmax(softmax):
-            #if np.argmax(openmax) == 0 and np.argmax(softmax) == 0:            
-                #print ('########## Parameters found ############')
-                #print ('Alpha ',alpha,' Tail ',tail)                
-                #print ('########## Parameters found ############')                
-            #    total += 1
-            #print ('----------------------------')
+            weibullDistributionModel = build_weibull(mean, distance, tail) 
+            openmax , softmax = recalibrate_scores(weibullDistributionModel, label, imagearr, alpharank=alpha)
+
     return np.argmax(softmax),np.argmax(openmax)
     
 def process_input(model,ind):
@@ -239,8 +221,6 @@ def process_input(model,ind):
 
 def compute_activation(model,img):
     imagearr = {}
-    # img = scipy.misc.imresize(np.squeeze(img),(32,32))
-    # img = img[:,0:32*32]
     print("compute_activation img = {}".format(img.shape))
     img = np.reshape(img,(1,32,32,3))
     score5,fc85 = compute_feature(img, model)
@@ -269,7 +249,7 @@ def openmax_unknown_class(model):
     print ('label',np.argmax(f['tst/y'][i]))
     print (f['tst/x'][i].shape)
     #exit()
-    imagearr = process_other_input(model,f['tst/x'][i])
+    imagearr = process_input(model,f['tst/x'][i])
     compute_openmax(model,imagearr)
         #if compute_openmax(model, imagearr)    >= 4:
         #    total += 1
