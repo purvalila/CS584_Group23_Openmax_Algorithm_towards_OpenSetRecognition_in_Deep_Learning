@@ -6,7 +6,7 @@ import scipy as sp
 from scipy.io import loadmat
 
 from openmax_utils import *
-from evt_fitting import weibull_tailfitting, query_weibull
+from evt_fitting import weibull_distribution_fitting, query_weibul_distribution
 
 try:
     import libmr
@@ -18,55 +18,55 @@ except ImportError:
 
 #---------------------------------------------------------------------------------
 # params and configuratoins
-NCHANNELS = 1
-NCLASSES = 10
+NumChannels = 1
+NumClasses = 10
 ALPHA_RANK = 6
 WEIBULL_TAIL_SIZE = 10
 
 #---------------------------------------------------------------------------------
-def computeOpenMaxProbability(openmax_fc8, openmax_score_u):
+def computeOpenMaxProbability(openmaxFC8, openmaxScore):
     """ Convert the scores in probability value using openmax
     
     Input:
     ---------------
-    openmax_fc8 : modified FC8 layer from Weibull based computation
-    openmax_score_u : degree
+    openmaxFC8 : modified FC8 layer from Weibull based computation
+    openmaxScore : degree
 
     Output:
     ---------------
-    modified_scores : probability values modified using OpenMax framework,
+    modifiedScores : probability values modified using OpenMax framework,
     by incorporating degree of uncertainity/openness for a given class
     
     """
-    prob_scores, prob_unknowns = [], []
-    for channel in range(NCHANNELS):
-        channel_scores, channel_unknowns = [], []
-        for category in range(NCLASSES):
+    probScores, probUnknowns = [], []
+    for channel in range(NumChannels):
+        channelScores, channel_unknowns = [], []
+        for category in range(NumClasses):
             #print (channel,category)
-            #print ('openmax',openmax_fc8[channel, category])
+            #print ('openmax',openmaxFC8[channel, category])
 
-            channel_scores += [sp.exp(openmax_fc8[channel, category])]
-        #print ('CS',channel_scores)
+            channelScores += [sp.exp(openmaxFC8[channel, category])]
+        #print ('CS',channelScores)
 
-        total_denominator = sp.sum(sp.exp(openmax_fc8[channel, :])) + sp.exp(sp.sum(openmax_score_u[channel, :]))
-        #print (total_denominator)
+        TOTAL_DENOM = sp.sum(sp.exp(openmaxFC8[channel, :])) + sp.exp(sp.sum(openmaxScore[channel, :]))
+        #print (TOTAL_DENOM)
 
-        prob_scores += [channel_scores/total_denominator ]
-        #print (prob_scores)
+        probScores += [channelScores/TOTAL_DENOM ]
+        #print (probScores)
 
-        prob_unknowns += [sp.exp(sp.sum(openmax_score_u[channel, :]))/total_denominator]
+        probUnknowns += [sp.exp(sp.sum(openmaxScore[channel, :]))/TOTAL_DENOM]
         
-    prob_scores = sp.asarray(prob_scores)
-    prob_unknowns = sp.asarray(prob_unknowns)
+    probScores = sp.asarray(probScores)
+    probUnknowns = sp.asarray(probUnknowns)
 
-    scores = sp.mean(prob_scores, axis = 0)
-    unknowns = sp.mean(prob_unknowns, axis=0)
-    modified_scores =  scores.tolist() + [unknowns]
-    assert len(modified_scores) == 11
-    return modified_scores
+    scores = sp.mean(probScores, axis = 0)
+    unknowns = sp.mean(probUnknowns, axis=0)
+    modifiedScores =  scores.tolist() + [unknowns]
+    assert len(modifiedScores) == 11
+    return modifiedScores
 
 #---------------------------------------------------------------------------------
-def recalibrate_scores(weibull_model, labellist, imgarr,
+def recalibrate_scores(weibullDistributionModel, labellist, img_arr,
                        layer = 'fc8', alpharank = 6, distance_type = 'eucos'):
     """ 
     Given FC8 features for an image, list of weibull models for each class,
@@ -74,9 +74,9 @@ def recalibrate_scores(weibull_model, labellist, imgarr,
 
     Input:
     ---------------
-    weibull_model : pre-computed weibull_model obtained from weibull_tailfitting() function
+    weibullDistributionModel : pre-computed weibullDistributionModel obtained from weibull_distribution_fitting() function
     labellist : ImageNet 2012 labellist
-    imgarr : features for a particular image extracted using caffe architecture
+    img_arr : features for a particular image extracted using caffe architecture
     
     Output:
     ---------------
@@ -87,8 +87,8 @@ def recalibrate_scores(weibull_model, labellist, imgarr,
 
     """
     
-    imglayer = imgarr[layer]
-    ranked_list = imgarr['scores'].argsort().ravel()[::-1]
+    imglayer = img_arr[layer]
+    ranked_list = img_arr['scores'].argsort().ravel()[::-1]
     alpha_weights = [((alpharank+1) - i)/float(alpharank) for i in range(1, alpharank+1)]
     ranked_alpha = sp.zeros(10)
     for i in range(len(alpha_weights)):
@@ -97,41 +97,41 @@ def recalibrate_scores(weibull_model, labellist, imgarr,
     #print (imglayer)
     # Now recalibrate each fc8 score for each channel and for each class
     # to include probability of unknown
-    openmax_fc8, openmax_score_u = [], []
-    for channel in range(NCHANNELS):
-        channel_scores = imglayer[channel, :]
-        openmax_fc8_channel = []
-        openmax_fc8_unknown = []
+    openmaxFC8, openmaxScore = [], []
+    for channel in range(NumChannels):
+        channelScores = imglayer[channel, :]
+        opnemaxFC8_channel = []
+        openmaxFC8_unknown = []
         count = 0
-        for categoryid in range(NCLASSES):
+        for categoryid in range(NumClasses):
             # get distance between current channel and mean vector
-            category_weibull = query_weibull(labellist[categoryid], weibull_model, distance_type = distance_type)
+            categoryWeibull = query_weibul_distribution(labellist[categoryid], weibullDistributionModel, distance_type = distance_type)
 
-            #print (category_weibull[0],category_weibull[1],category_weibull[2])
+            #print (categoryWeibull[0],categoryWeibull[1],categoryWeibull[2])
 
-            channel_distance = compute_distance(channel_scores, channel, category_weibull[0],
+            channel_distance = compute_distance(channelScores, channel, categoryWeibull[0],
                                                 distance_type = distance_type)
             #print ('cd',channel_distance)                                                
             # obtain w_score for the distance and compute probability of the distance
             # being unknown wrt to mean training vector and channel distances for
             # category and channel under consideration
-            wscore = category_weibull[2][channel].w_score(channel_distance)
+            wscore = categoryWeibull[2][channel].w_score(channel_distance)
             #print ('wscore',wscore)
-            #print (channel_scores)
-            modified_fc8_score = channel_scores[categoryid] * ( 1 - wscore*ranked_alpha[categoryid] )
-            openmax_fc8_channel += [modified_fc8_score]
-            openmax_fc8_unknown += [channel_scores[categoryid] - modified_fc8_score ]
+            #print (channelScores)
+            modified_fc8_score = channelScores[categoryid] * ( 1 - wscore*ranked_alpha[categoryid] )
+            opnemaxFC8_channel += [modified_fc8_score]
+            openmaxFC8_unknown += [channelScores[categoryid] - modified_fc8_score ]
 
         # gather modified scores fc8 scores for each channel for the given image
-        openmax_fc8 += [openmax_fc8_channel]
-        openmax_score_u += [openmax_fc8_unknown]
-    openmax_fc8 = sp.asarray(openmax_fc8)
-    openmax_score_u = sp.asarray(openmax_score_u)
+        openmaxFC8 += [opnemaxFC8_channel]
+        openmaxScore += [openmaxFC8_unknown]
+    openmaxFC8 = sp.asarray(openmaxFC8)
+    openmaxScore = sp.asarray(openmaxScore)
     
-    #print (openmax_fc8,openmax_score_u)
+    #print (openmaxFC8,openmaxScore)
     # Pass the recalibrated fc8 scores for the image into openmax    
-    openmax_probab = computeOpenMaxProbability(openmax_fc8, openmax_score_u)
-    softmax_probab = imgarr['scores'].ravel() 
+    openmax_probab = computeOpenMaxProbability(openmaxFC8, openmaxScore)
+    softmax_probab = img_arr['scores'].ravel() 
     return sp.asarray(openmax_probab), sp.asarray(softmax_probab)
 
 #---------------------------------------------------------------------------------
@@ -198,12 +198,12 @@ def main():
     image_arrname = args.image_arrname
 
     labellist = getlabellist(synsetfname)
-    weibull_model = weibull_tailfitting(mean_path, distance_path, labellist,
+    weibullDistributionModel = weibull_distribution_fitting(mean_path, distance_path, labellist,
                                         tailsize = WEIBULL_TAIL_SIZE)
 
-    print ("Completed Weibull fitting on %s models" %len(weibull_model.keys()))
-    imgarr = loadmat(image_arrname)
-    openmax, softmax =  recalibrate_scores(weibull_model, labellist, imgarr)
+    print ("Completed Weibull fitting on %s models" %len(weibullDistributionModel.keys()))
+    img_arr = loadmat(image_arrname)
+    openmax, softmax =  recalibrate_scores(weibullDistributionModel, labellist, img_arr)
     print ("Image ArrName: %s" %image_arrname)
     print ("Softmax Scores ", softmax)
     print ("Openmax Scores ", openmax)
