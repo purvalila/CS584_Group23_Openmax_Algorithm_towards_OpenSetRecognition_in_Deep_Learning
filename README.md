@@ -27,6 +27,6 @@ This is a Machine Learning CS584 Project done by Purva and Pragati
 1. Execute the CIFAR10_image_classification.py
 2. Build libmr using cmake
 3. After the libmr is built, two files are generated in examples folder of libmr.
- a. Execute python_examples.py to test if your libmr is built properly.
- b. Execute python_exaple_plot.py to get the tailfitting plot graph for weibull distribution with different tail sizes.
+  - a. Execute python_examples.py to test if your libmr is built properly.
+  - b. Execute python_exaple_plot.py to get the tailfitting plot graph for weibull distribution with different tail sizes.
 5. Execute openmax_mnist_test.py
