@@ -16,20 +16,19 @@ Step 5: Pass the sample to compute openmax and evaluate the output from openmax,
 Step 6: Test the trained openmax to images from different distribution
 
 
-Python libraries required:
+Python libraries required :-
 
 matplotlib
-
 tensorflow
-
 keras
-
 scipy
-
 opencv-python
-
 cython
-
 cmake
-
 libmr
+
+
+Execution Steps :-
+1. Execute the CIFAR10_image_classification.py
+2. Build libmr using cmake
+3. Execute openmax_mnist_test.py
