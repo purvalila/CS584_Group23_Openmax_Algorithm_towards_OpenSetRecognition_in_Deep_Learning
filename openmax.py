@@ -8,7 +8,7 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
 from tensorflow.keras.utils import to_categorical
 
-from evt_fitting import weibull_distribution_fitting, query_weibul_distribution
+from EVT_Weibull_fitting import weibull_distribution_fitting, query_weibul_distribution
 from compute_openmax import computeOpenMaxProbability,recalibrate_scores
 from openmax_utils import compute_distance
 
