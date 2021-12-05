@@ -39,20 +39,13 @@ def weibull_distribution_fitting(meanFilesPath, distanceFilesPath, tailsize = 10
     
     weibull_model = {}
     # for each category, read meanfile, distance file, and perform weibull fitting
-   
-    #for category in labellist:
-    #weibull_model = {}
-    #distance_scores = loadmat('%s/%s_distances.mat' %(distancefiles_path, category))[distance_type]
-    #meantrain_vec = loadmat('%s/%s.mat' %(meanFilesPath, category))
     distance_scores = np.array(distanceFilesPath[distance_type])
     meantrain_vec = np.array(meanFilesPath)
 
     weibull_model['distances_%s'%distance_type] = distance_scores
     weibull_model['mean_vec'] = meantrain_vec
     weibull_model['weibull_model'] = []
-    #for channel in range(NCHANNELS):
     mr = libmr.MR()
-    #print (distance_scores.shape)
     tailtofit = sorted(distance_scores)[-tailsize:]
     mr.fit_high(tailtofit, len(tailtofit))
     weibull_model['weibull_model'] += [mr]
@@ -72,7 +65,6 @@ def query_weibull_distribution(categoryname, weibullDistributionModel, distance_
     """
     
     category_weibull = []
-    # category_weibull += [weibull_model[category_name]['mean_vec'][category_name]]
     category_weibull += [weibullDistributionModel[categoryname]['mean_vec']]
     category_weibull += [weibullDistributionModel[categoryname]['distances_%s' %distance_type]]
     category_weibull += [weibullDistributionModel[categoryname]['weibull_model']]
