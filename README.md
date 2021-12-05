@@ -27,6 +27,9 @@ keras
 scipy
 
 opencv-python
+
 cython
+
 cmake
+
 libmr
