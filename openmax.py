@@ -1,4 +1,5 @@
 from __future__ import print_function
+import tensorflow as tf
 import keras
 from keras.datasets import cifar10
 from keras.models import Sequential,load_model,save_model,model_from_config,model_from_json
@@ -24,12 +25,12 @@ import matplotlib.pyplot as plt
 
 import ssl
 import sys
-#import cv2
+import cv2
 import glob
 
-ssl._create_default_https_context = ssl._create_unverified_context
+tf.compat.v1.disable_eager_execution()
 
-#train_x,train_y,test_x,text_y,valid_x,valid_y = split(0.9,0.05,0.05)
+ssl._create_default_https_context = ssl._create_unverified_context
 
 label=['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
@@ -83,25 +84,6 @@ img_rows, img_cols = 32, 32
 
 # the data, shuffled and split between train and test sets
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
-# x_test = []
-# Y_test_new = []
-# for i in range(5):
-# path = glob.glob("/home/pragati/Downloads/OSDN/images/*.png")
-    # n = cv2.imread(X_test_new[i])
-# X_test_new = cv2.imread("/home/pragati/Downloads/OSDN/images/one.png" )
-# X_test_new = [cv2.imread("/home/pragati/Downloads/OSDN/images/",i.png) ]
-# Y_test_new = "unknown"
-
-#print (x_train.shape,y_train.shape)
-
-#sep_x,sep_y = seperate_data(x_test,y_test)
-
-#emnist = emnist.read_data_sets('EMNIST_data',one_hot=True)
-#x_train, y_train = emnist.train.images,emnist.train.labels
-#x_test, y_test = emnist.test.images,emnist.test.labels
-#x_valid, y_valid = emnist.validation.images,emnist.validation.labels
-
-#print (x_train.shape,y_train.shape)
 
 if K.image_data_format() == 'channels_first':
     x_train = x_train.reshape(x_train.shape[0], 3, img_rows, img_cols)
@@ -120,11 +102,6 @@ x_test = x_test.astype('float32')
 #x_valid = x_valid.astype('float32')
 x_train /= 255
 x_test /= 255
-#x_valid /= 255
-#print('x_train shape:', x_train.shape)
-#print(x_train.shape[0], 'train samples')
-#print(x_test.shape[0], 'test samples')
-#print(x_valid.shape[0], 'valid samples')
 
 # convert class vectors to binary class matrices
 y_train = to_categorical(y_train, num_classes)
@@ -148,8 +125,7 @@ def create_model(model):
     output = model.layers[-1]
     
     # Combining the train and test set
-    #print (x_train.shape,x_test.shape) 
-    #exit()
+
     x_all = np.concatenate((x_train,x_test),axis=0)
     y_all = np.concatenate((y_train,y_test),axis=0)    
     pred = model.predict(x_all)
@@ -193,7 +169,6 @@ def compute_openmax(model,imagearr):
 
 
     alpharank_list = [10]
-    #tail_list = [4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
     tail_list = [5]    
     total = 0
     for alpha in alpharank_list:
@@ -201,8 +176,6 @@ def compute_openmax(model,imagearr):
         openmax = None
         softmax = None        
         for tail in tail_list:
-            #print ('Alpha ',alpha,' Tail ',tail)
-            #print ('++++++++++++++++++++++++++++')
             weibullDistributionModel = build_weibull(mean, distance, tail) 
             openmax , softmax = recalibrate_scores(weibullDistributionModel, label, imagearr, alpharank=alpha)
 
@@ -233,13 +206,9 @@ def image_show(img,label):
     img = scipy.misc.imresize(np.squeeze(img),(32,32))
     # img = scipy.misc.imread(img)
     img = img[:,0:32*32]    
-    plt.imshow(img)
+    plt.imshow(np.squeeze(img), cmap='gray')
     print ('Character Label: ',np.argmax(label))
-    # cv2.imwrite('/home/pragati/Downloads/OSDN/images/in.png', np. e(img, (28,28,1)))
-    # sys.exit()
     plt.show()
-    # plt.imsave('/home/pragati/Downloads/OSDN/images', img)
-
 
 
 def openmax_unknown_class(model):
@@ -251,19 +220,17 @@ def openmax_unknown_class(model):
     #exit()
     imagearr = process_input(model,f['tst/x'][i])
     compute_openmax(model,imagearr)
-        #if compute_openmax(model, imagearr)    >= 4:
-        #    total += 1
-    #print ('correctly classified',total,'total set',len(y2))
+
 
 def openmax_known_class(model,y):
     total = 0
     for i in range(15):
-        #print ('label',y[i])
+
         j = np.random.randint(0,len(y_train[i]))
         imagearr = process_input(model,j)
         print (compute_openmax(model, imagearr))
-        #    total += 1
-    #print ('correct classified',total,'total set',len(y))
+
+
 
 """
 
