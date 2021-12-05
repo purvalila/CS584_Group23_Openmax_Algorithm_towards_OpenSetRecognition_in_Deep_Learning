@@ -3,7 +3,7 @@ This is a Machine Learning CS584 Project done by Purva and Pragati
 
 Steps to run the code:
 
-Step 1: Train a CNN model for the dataset you choice
+Step 1: Train a CNN model for the dataset of your choice
 
 Step 2: Load the trained model
 
