@@ -8,7 +8,7 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
 from tensorflow.keras.utils import to_categorical
 
-from EVT_Weibull_fitting import weibull_distribution_fitting, query_weibul_distribution
+from EVT_Weibull_Fitting import weibull_distribution_fitting, query_weibull_distribution
 from compute_openmax import computeOpenMaxProbability,recalibrate_scores
 from openmax_utils import compute_distance
 
@@ -88,18 +88,15 @@ img_rows, img_cols = 32, 32
 if K.image_data_format() == 'channels_first':
     x_train = x_train.reshape(x_train.shape[0], 3, img_rows, img_cols)
     x_test = x_test.reshape(x_test.shape[0], 3, img_rows, img_cols)
-    #x_valid = x_valid.reshape(x_valid.shape[0], 1, img_rows, img_cols)
     input_shape = (3, img_rows, img_cols)
 else:
     x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, 3)
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, 3)
-    #x_valid = x_valid.reshape(x_valid.shape[0],img_rows, img_cols, 1)    
     input_shape = (img_rows, img_cols, 3)
 
 
 x_train = x_train.astype('float32')
 x_test = x_test.astype('float32')
-#x_valid = x_valid.astype('float32')
 x_train /= 255
 x_test /= 255
 
@@ -109,10 +106,8 @@ y_test = to_categorical(y_test, num_classes)
 
 
 def get_activations(model, layer, X_batch):
-    #print (model.layers[6].output)
     get_activations = K.function([model.layers[0].input,K.learning_phase()], [model.layers[layer].output])
     activations = get_activations([X_batch,0])[0]
-    #print (activations.shape)
     return activations
 
 def get_correct_classified(pred,y):
@@ -189,7 +184,6 @@ def process_input(model,ind):
     score5,fc85 = compute_feature(image, model)    
     imagearr['scores'] = score5
     imagearr['fc8'] = fc85
-    #print (score5)
     return imagearr
 
 def compute_activation(model,img):
@@ -202,9 +196,7 @@ def compute_activation(model,img):
     return imagearr
 
 def image_show(img,label):
-    # img = np.asarray(img)
     img = scipy.misc.imresize(np.squeeze(img),(32,32))
-    # img = scipy.misc.imread(img)
     img = img[:,0:32*32]    
     plt.imshow(np.squeeze(img), cmap='gray')
     print ('Character Label: ',np.argmax(label))
@@ -217,7 +209,6 @@ def openmax_unknown_class(model):
     i = np.random.randint(0,len(f['tst/y']))
     print ('label',np.argmax(f['tst/y'][i]))
     print (f['tst/x'][i].shape)
-    #exit()
     imagearr = process_input(model,f['tst/x'][i])
     compute_openmax(model,imagearr)
 
@@ -229,19 +220,4 @@ def openmax_known_class(model,y):
         j = np.random.randint(0,len(y_train[i]))
         imagearr = process_input(model,j)
         print (compute_openmax(model, imagearr))
-
-
-
-"""
-
-def main():
-    #model = load_model("MNIST_CNN_tanh.h5")
-    model = load_model("MNIST_CNN.h5")    
-    #create_model(model)
-    #openmax_known_class(model,y_test)
-    openmax_unknown_class(model)
-
-if __name__ == '__main__':
-    main()
-"""
 

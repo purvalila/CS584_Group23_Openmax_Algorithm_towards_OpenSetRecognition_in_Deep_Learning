@@ -6,7 +6,7 @@ import scipy as sp
 from scipy.io import loadmat
 
 from openmax_utils import *
-from evt_fitting import weibull_distribution_fitting, query_weibul_distribution
+from EVT_Weibull_Fitting import weibull_distribution_fitting, query_weibull_distribution
 
 try:
     import libmr
@@ -42,17 +42,11 @@ def computeOpenMaxProbability(openmaxFC8, openmaxScore):
     for channel in range(NumChannels):
         channelScores, channel_unknowns = [], []
         for category in range(NumClasses):
-            #print (channel,category)
-            #print ('openmax',openmaxFC8[channel, category])
-
             channelScores += [sp.exp(openmaxFC8[channel, category])]
-        #print ('CS',channelScores)
 
         TOTAL_DENOM = sp.sum(sp.exp(openmaxFC8[channel, :])) + sp.exp(sp.sum(openmaxScore[channel, :]))
-        #print (TOTAL_DENOM)
 
         probScores += [channelScores/TOTAL_DENOM ]
-        #print (probScores)
 
         probUnknowns += [sp.exp(sp.sum(openmaxScore[channel, :]))/TOTAL_DENOM]
         
@@ -94,7 +88,6 @@ def recalibrate_scores(weibullDistributionModel, labellist, img_arr,
     for i in range(len(alpha_weights)):
         ranked_alpha[ranked_list[i]] = alpha_weights[i]
 
-    #print (imglayer)
     # Now recalibrate each fc8 score for each channel and for each class
     # to include probability of unknown
     openmaxFC8, openmaxScore = [], []
@@ -107,17 +100,12 @@ def recalibrate_scores(weibullDistributionModel, labellist, img_arr,
             # get distance between current channel and mean vector
             categoryWeibull = query_weibul_distribution(labellist[categoryid], weibullDistributionModel, distance_type = distance_type)
 
-            #print (categoryWeibull[0],categoryWeibull[1],categoryWeibull[2])
-
             channel_distance = compute_distance(channelScores, channel, categoryWeibull[0],
                                                 distance_type = distance_type)
-            #print ('cd',channel_distance)                                                
             # obtain w_score for the distance and compute probability of the distance
             # being unknown wrt to mean training vector and channel distances for
             # category and channel under consideration
             wscore = categoryWeibull[2][channel].w_score(channel_distance)
-            #print ('wscore',wscore)
-            #print (channelScores)
             modified_fc8_score = channelScores[categoryid] * ( 1 - wscore*ranked_alpha[categoryid] )
             opnemaxFC8_channel += [modified_fc8_score]
             openmaxFC8_unknown += [channelScores[categoryid] - modified_fc8_score ]
@@ -128,7 +116,6 @@ def recalibrate_scores(weibullDistributionModel, labellist, img_arr,
     openmaxFC8 = sp.asarray(openmaxFC8)
     openmaxScore = sp.asarray(openmaxScore)
     
-    #print (openmaxFC8,openmaxScore)
     # Pass the recalibrated fc8 scores for the image into openmax    
     openmax_probab = computeOpenMaxProbability(openmaxFC8, openmaxScore)
     softmax_probab = img_arr['scores'].ravel() 
