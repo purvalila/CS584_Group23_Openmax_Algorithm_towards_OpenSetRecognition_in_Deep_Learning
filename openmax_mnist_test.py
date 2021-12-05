@@ -1,5 +1,4 @@
 import numpy as np
-# from tensorflow import keras
 from openmax import *
 import glob
 import cv2
@@ -8,20 +7,19 @@ import scipy.misc
 from PIL import Image  
 
 np.random.seed(12345)
-model = load_model('/Users/pragatikhekale/Desktop/Fall21/CS 584 Machine Learning/Project/OSDN_CIFAR/saved_models/keras_cifar10_trained_model.h5')
+model = load_model(os.path.join(os.getcwd(), 'saved_models/keras_cifar10_trained_model.h5'))
 create_model(model)
 
 X_test_new = []
 Y_test_new = []
 
-path = glob.glob("//Users/pragatikhekale/Desktop/Fall21/CS 584 Machine Learning/Project/OSDN_CIFAR/images_MNIST/*.png")
+path = glob.glob(os.path.join(os.getcwd(), 'images_MNIST/*.png'))
 for imagepath in path:
     n = Image.open(imagepath)
     print(n.size)
     n = np.reshape(n,(28,28))
     print(n.shape)
     X_test_new.append(n)
-
     
 Y_test_new = ['three', 'two', 'unknown','zero']
 
@@ -29,7 +27,6 @@ for i in range(0,4):
 
     test_x1 = X_test_new[i]
     test_y1 = Y_test_new[i]
-
     image_show(test_x1, test_y1)
 
     np_load_old = np.load
@@ -37,13 +34,10 @@ for i in range(0,4):
 
 
     # Compute fc8 activation for the given image
-
     activation = compute_activation(model, test_x1)
 
     # Compute openmax 
-
     softmax,openmax = compute_openmax(model,activation)
-    #openmax_unknown_class(model)
     np.load = np_load_old
 
     print ('Actual Label: ', np.argmax(test_y1))
@@ -52,4 +46,3 @@ for i in range(0,4):
         openmax = 'Unknown'
     print ('Prediction openmax: ',openmax)
     i = i + 1
-
