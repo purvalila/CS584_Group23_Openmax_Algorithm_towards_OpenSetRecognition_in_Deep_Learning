@@ -20,7 +20,6 @@ for tailsize in [10,30,50]:
     mr.fit_low(data, tailsize)
     assert mr.is_valid
     print("scale shape sign translate score  " , mr.get_params());
-    # print("scale lb up shape lb up  " , mr.get_confidene());    
     ax1.plot(xs, mr.w_score_vector(xs), label="Tailsize: %d"%tailsize)
 ax1.legend()
 
@@ -30,7 +29,6 @@ for tailsize in [10,30,50]:
     mr.fit_high(data, tailsize)
     assert mr.is_valid
     print("scale shape sign translate score  " , mr.get_params());
-    # print("scale lb up shape lb up  " , mr.get_confidene());
     ax2.plot(xs, mr.w_score_vector(xs), label="Tailsize: %d"%tailsize)
 ax2.legend()
 
