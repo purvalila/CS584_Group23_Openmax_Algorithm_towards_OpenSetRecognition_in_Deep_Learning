@@ -1,0 +1,10 @@
+FROM ubuntu:20.04
+ENV DEBIAN_FRONTEND noninteractive
+RUN apt-get update && apt-get install -y build-essential make cmake git && rm -rf /var/lib/apt/lists/*
+RUN git clone https://github.com/Vastlab/libMR.git
+RUN mkdir /libMR/build
+WORKDIR /libMR/build
+RUN cmake ..
+RUN make
+RUN /bin/bash -c '/libMR/build/examples/mr-test'
+RUN /bin/bash -c '/libMR/build/examples/wbl-test'
